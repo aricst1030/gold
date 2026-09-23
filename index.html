@@ -1,123 +1,149 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#111827">
-  <title>GOLD RATE | 金買取相場シミュレーター</title>
-  <style>
-    *{box-sizing:border-box}
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Segoe UI",sans-serif;background:#0b0f14;color:#f7f7f7}
-    .wrap{max-width:760px;margin:auto;padding:20px 16px 48px}
-    .hero{padding:18px 4px 22px}
-    .eyebrow{font-size:12px;letter-spacing:.18em;color:#d6ad55;font-weight:800}
-    h1{margin:6px 0 4px;font-size:32px;letter-spacing:.06em}
-    .sub{color:#aab1bb;font-size:14px}
-    .card{background:#141a22;border:1px solid #27303b;border-radius:20px;padding:20px;margin-top:14px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
-    .price-card{background:linear-gradient(145deg,#1a2029,#10151c);border-color:#4b3b1c}
-    .label{color:#aab1bb;font-size:13px}
-    .price{font-size:46px;line-height:1.05;font-weight:900;margin:7px 0;color:#e7c36a}
-    .unit{font-size:17px;color:#d9dde3;font-weight:700}
-    .updated{font-size:12px;color:#929aa6;margin-top:10px}
-    .source{display:inline-block;margin-top:12px;color:#e7c36a;text-decoration:none;font-size:13px;font-weight:700}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .field label{display:block;font-size:13px;color:#aab1bb;margin-bottom:7px}
-    select,input{width:100%;border:1px solid #343e4b;background:#0e1319;color:#fff;border-radius:12px;padding:14px;font-size:18px;outline:none}
-    .calc{margin-top:16px;border-radius:16px;background:#0e1319;padding:17px;border:1px solid #29323d}
-    .calc-title{font-size:13px;color:#aab1bb}
-    .calc-price{font-size:31px;font-weight:900;margin-top:4px}
-    .breakdown{margin-top:12px;display:grid;gap:7px;font-size:13px;color:#b9c0ca}
-    .row{display:flex;justify-content:space-between;gap:12px}
-    .row strong{color:#fff}
-    .notice{font-size:12px;color:#8f98a4;line-height:1.7;margin-top:14px}
-    .error{color:#ff9a9a}
-    @media(max-width:560px){h1{font-size:27px}.price{font-size:39px}.grid{grid-template-columns:1fr}.calc-price{font-size:28px}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金買取価格 リアルタイム比較シミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div class="wrap">
-  <header class="hero">
-    <div class="eyebrow">GOLD RATE</div>
-    <h1>金買取相場シミュレーター</h1>
-    <div class="sub">今日の金相場を基準に、売却額の目安をすぐ計算</div>
-  </header>
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6 text-yellow-600">金買取価格 比較シミュレーター</h1>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <p id="update-time" class="text-sm text-gray-500 mb-4 text-right">データ読み込み中...</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">純度を選択</label>
+                    <select id="purity" class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-yellow-500 focus:border-yellow-500">
+                        <option value="1.0">K24 (純金)</option>
+                        <option value="0.916">K22</option>
+                        <option value="0.835">K20</option>
+                        <option value="0.750">K18</option>
+                        <option value="0.585">K14</option>
+                        <option value="0.416">K10</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">重さ (グラム)</label>
+                    <div class="flex items-center">
+                        <input type="number" id="weight" value="10" min="0.1" step="0.1" class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-yellow-500 focus:border-yellow-500">
+                        <span class="ml-2">g</span>
+                    </div>
+                </div>
+            </div>
 
-  <section class="card price-card">
-    <div class="label">田中貴金属・金 店頭買取価格（税込）</div>
-    <div><span id="basePrice" class="price">--</span><span class="unit"> 円 / g</span></div>
-    <div id="updated" class="updated">価格を読み込み中…</div>
-    <a class="source" href="https://gold.tanaka.co.jp/commodity/souba/index.php" target="_blank" rel="noopener">公式価格を確認 →</a>
-  </section>
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    想定手数料 (業者による減額): <span id="fee-display" class="font-bold text-red-600">0</span>%
+                </label>
+                <input type="range" id="fee-slider" min="0" max="30" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0% (手数料なし)</span>
+                    <span>15%</span>
+                    <span>30%</span>
+                </div>
+            </div>
+        </div>
 
-  <section class="card">
-    <div class="grid">
-      <div class="field">
-        <label for="purity">金の純度</label>
-        <select id="purity">
-          <option value="1">K24（純金）</option>
-          <option value="0.916">K22</option>
-          <option value="0.833">K20</option>
-          <option value="0.750">K18</option>
-          <option value="0.585">K14</option>
-          <option value="0.417">K10</option>
-          <option value="0.375">K9</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="weight">重さ</label>
-        <input id="weight" type="number" value="10" min="0" step="0.01" inputmode="decimal">
-      </div>
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </div>
 
-    <div class="calc">
-      <div class="calc-title">買取額の目安</div>
-      <div id="total" class="calc-price">-- 円</div>
-      <div class="breakdown">
-        <div class="row"><span>純度換算 1g単価</span><strong id="unitPrice">-- 円</strong></div>
-        <div class="row"><span>重量</span><strong id="weightView">10 g</strong></div>
-        <div class="row"><span>計算方法</span><strong>相場 × 純度 × 重量</strong></div>
-      </div>
-    </div>
-    <div class="notice">
-      ※これは田中貴金属の金地金「店頭買取価格」を基準にした概算です。実際の買取額は品位確認、商品状態、手数料、店舗・サービス条件などにより異なる場合があります。<br>
-      ※田中貴金属の地金価格は営業日の9:30と14:00に公表され、相場等により同日内に変更される場合があります。
-    </div>
-  </section>
-</div>
+    <script>
+        const defaultPrices = {
+            tanaka: 13500,
+            daikichi: 13450,
+            komehyo: 13400,
+            nanboya: 13350,
+            otakaraya: 13200,
+            goldmrs: 13480,
+            last_updated: "初期データ"
+        };
 
-<script>
-let data = null;
-const yen = n => Number.isFinite(n) ? Math.floor(n).toLocaleString("ja-JP") : "--";
+        let basePrices = { ...defaultPrices };
 
-function calculate(){
-  if(!data || !data.tanaka_buy) return;
-  const purity = Number(document.getElementById("purity").value);
-  const weight = Math.max(0, Number(document.getElementById("weight").value) || 0);
-  const unit = Math.floor(data.tanaka_buy * purity);
-  const total = Math.floor(unit * weight);
-  document.getElementById("unitPrice").textContent = yen(unit) + " 円";
-  document.getElementById("weightView").textContent = weight + " g";
-  document.getElementById("total").textContent = yen(total) + " 円";
-}
+        async function fetchPrices() {
+            try {
+                const res = await fetch('prices.json');
+                if (res.ok) {
+                    const data = await res.json();
+                    basePrices = { ...defaultPrices, ...data };
+                    document.getElementById('update-time').innerText = `最終更新: ${basePrices.last_updated || '取得完了'}`;
+                }
+            } catch (error) {
+                document.getElementById('update-time').innerText = "※標準レートで表示中";
+            }
+            calculate();
+        }
 
-async function load(){
-  try{
-    const res = await fetch("prices.json?ts=" + Date.now(), {cache:"no-store"});
-    if(!res.ok) throw new Error("prices.json");
-    data = await res.json();
-    document.getElementById("basePrice").textContent = yen(data.tanaka_buy);
-    document.getElementById("updated").textContent =
-      `最終取得: ${data.last_updated_jst} / ${data.source_label}`;
-    calculate();
-  }catch(e){
-    document.getElementById("basePrice").textContent = "取得失敗";
-    document.getElementById("updated").className = "updated error";
-    document.getElementById("updated").textContent = "価格データを読み込めませんでした。公式ページをご確認ください。";
-  }
-}
-document.getElementById("purity").addEventListener("change", calculate);
-document.getElementById("weight").addEventListener("input", calculate);
-load();
-</script>
+        function calculate() {
+            const purity = parseFloat(document.getElementById('purity').value) || 1.0;
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const feePercent = parseFloat(document.getElementById('fee-slider').value) || 0;
+            
+            document.getElementById('fee-display').innerText = feePercent;
+
+            const companies = [
+                { id: 'tanaka', name: '田中貴金属' },
+                { id: 'daikichi', name: '買取大吉' },
+                { id: 'komehyo', name: 'KOMEHYO' },
+                { id: 'nanboya', name: 'なんぼや' },
+                { id: 'otakaraya', name: 'おたからや' },
+                { id: 'goldmrs', name: 'ゴールドミセス' }
+            ];
+
+            let results = companies.map(comp => {
+                const baseRateK24 = basePrices[comp.id] || 13000;
+                const ratePerGram = Math.floor(baseRateK24 * purity);
+                const grossTotal = Math.floor(ratePerGram * weight);
+                const feeAmount = Math.floor(grossTotal * (feePercent / 100));
+                const netTotal = grossTotal - feeAmount;
+
+                return { ...comp, ratePerGram, grossTotal, feeAmount, netTotal };
+            });
+
+            results.sort((a, b) => b.netTotal - a.netTotal);
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            results.forEach((res, index) => {
+                const isTop = index === 0 && res.netTotal > 0;
+                const card = document.createElement('div');
+                card.className = `relative bg-white rounded-lg p-5 shadow-sm border-2 ${isTop ? 'border-yellow-400 bg-yellow-50' : 'border-transparent'}`;
+                
+                let badge = isTop ? `<span class="absolute -top-3 -left-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">受取額 最高値!</span>` : '';
+
+                card.innerHTML = `
+                    ${badge}
+                    <h2 class="text-lg font-bold text-gray-800 mb-2">${res.name}</h2>
+                    <div class="text-sm text-gray-600 space-y-1 mb-3">
+                        <div class="flex justify-between">
+                            <span>1gあたり単価:</span>
+                            <span>${res.ratePerGram.toLocaleString()} 円</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>手数料 (${feePercent}%):</span>
+                            <span class="text-red-500">-${res.feeAmount.toLocaleString()} 円</span>
+                        </div>
+                    </div>
+                    <div class="border-t pt-2 mt-2">
+                        <div class="text-xs text-gray-500">最終受取予想額</div>
+                        <div class="text-2xl font-black ${isTop ? 'text-red-600' : 'text-gray-800'} text-right">
+                            ${res.netTotal.toLocaleString()} <span class="text-base font-normal">円</span>
+                        </div>
+                    </div>
+                `;
+                resultsDiv.appendChild(card);
+            });
+        }
+
+        document.getElementById('purity').addEventListener('change', calculate);
+        document.getElementById('weight').addEventListener('input', calculate);
+        document.getElementById('fee-slider').addEventListener('input', calculate);
+
+        window.onload = fetchPrices;
+    </script>
 </body>
 </html>
