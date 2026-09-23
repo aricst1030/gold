@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金買取価格 リアルタイム比較シミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6 text-yellow-600">金買取価格 比較シミュレーター</h1>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <p id="update-time" class="text-sm text-gray-500 mb-4 text-right">データ読み込み中...</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">純度を選択</label>
+                    <select id="purity" class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-yellow-500 focus:border-yellow-500">
+                        <option value="1.0">K24 (純金)</option>
+                        <option value="0.916">K22</option>
+                        <option value="0.835">K20</option>
+                        <option value="0.750">K18</option>
+                        <option value="0.585">K14</option>
+                        <option value="0.416">K10</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">重さ (グラム)</label>
+                    <div class="flex items-center">
+                        <input type="number" id="weight" value="10" min="0.1" step="0.1" class="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-yellow-500 focus:border-yellow-500">
+                        <span class="ml-2">g</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    想定手数料 (業者による減額): <span id="fee-display" class="font-bold text-red-600">0</span>%
+                </label>
+                <input type="range" id="fee-slider" min="0" max="30" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>0% (手数料なし)</span>
+                    <span>15%</span>
+                    <span>30%</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <script>
+        let basePrices = {};
+
+        async function fetchPrices() {
+            try {
+                const res = await fetch('prices.json');
+                basePrices = await res.json();
+                document.getElementById('update-time').innerText = `最終更新: ${basePrices.last_updated}`;
+                calculate();
+            } catch (error) {
+                console.error("価格の読み込みに失敗しました", error);
+                document.getElementById('update-time').innerText = "エラー: データの読み込みに失敗しました。";
+            }
+        }
+
+        function calculate() {
+            if (!basePrices.tanaka) return;
+
+            const purity = parseFloat(document.getElementById('purity').value);
+            const weight = parseFloat(document.getElementById('weight').value) || 0;
+            const feePercent = parseFloat(document.getElementById('fee-slider').value);
+            
+            document.getElementById('fee-display').innerText = feePercent;
+
+            const companies = [
+                { id: 'tanaka', name: '田中貴金属' },
+                { id: 'daikichi', name: '買取大吉' },
+                { id: 'komehyo', name: 'KOMEHYO' },
+                { id: 'nanboya', name: 'なんぼや' },
+                { id: 'otakaraya', name: 'おたからや' },
+                { id: 'goldmrs', name: 'ゴールドミセス' }
+            ];
+
+            let results = companies.map(comp => {
+                const baseRateK24 = basePrices[comp.id] || 0;
+                const ratePerGram = Math.floor(baseRateK24 * purity);
+                const grossTotal = Math.floor(ratePerGram * weight);
+                const feeAmount = Math.floor(grossTotal * (feePercent / 100));
+                const netTotal = grossTotal - feeAmount;
+
+                return { ...comp, ratePerGram, grossTotal, feeAmount, netTotal };
+            });
+
+            results.sort((a, b) => b.netTotal - a.netTotal);
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            results.forEach((res, index) => {
+                const isTop = index === 0 && res.netTotal > 0;
+                const card = document.createElement('div');
+                card.className = `relative bg-white rounded-lg p-5 shadow-sm border-2 ${isTop ? 'border-yellow-400 bg-yellow-50' : 'border-transparent'}`;
+                
+                let badge = isTop ? `<span class="absolute -top-3 -left-3 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">受取額 最高値!</span>` : '';
+
+                card.innerHTML = `
+                    ${badge}
+                    <h2 class="text-lg font-bold text-gray-800 mb-2">${res.name}</h2>
+                    <div class="text-sm text-gray-600 space-y-1 mb-3">
+                        <div class="flex justify-between">
+                            <span>1gあたり単価:</span>
+                            <span>${res.ratePerGram.toLocaleString()} 円</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>手数料 (${feePercent}%):</span>
+                            <span class="text-red-500">-${res.feeAmount.toLocaleString()} 円</span>
+                        </div>
+                    </div>
+                    <div class="border-t pt-2 mt-2">
+                        <div class="text-xs text-gray-500">最終受取予想額</div>
+                        <div class="text-2xl font-black ${isTop ? 'text-red-600' : 'text-gray-800'} text-right">
+                            ${res.netTotal.toLocaleString()} <span class="text-base font-normal">円</span>
+                        </div>
+                    </div>
+                `;
+                resultsDiv.appendChild(card);
+            });
+        }
+
+        document.getElementById('purity').addEventListener('change', calculate);
+        document.getElementById('weight').addEventListener('input', calculate);
+        document.getElementById('fee-slider').addEventListener('input', calculate);
+
+        window.onload = fetchPrices;
+    </script>
+</body>
+</html>
