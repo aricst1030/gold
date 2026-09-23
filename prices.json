@@ -1,9 +1,47 @@
 {
-  "tanaka": 23880,
-  "daikichi": 23920,
-  "komehyo": 23850,
-  "nanboya": 23900,
-  "otakaraya": 23750,
-  "goldmrs": 23950,
-  "last_updated": "2026-09-23 15:00:00"
+  "updated_jst": "2026-09-23（初期登録データ）",
+  "shops": [
+    {
+      "name": "田中貴金属",
+      "type": "公式・店頭買取",
+      "url": "https://gold.tanaka.co.jp/commodity/souba/index.php",
+      "prices": {
+        "K24": 24247,
+        "K22": 22209,
+        "K20": 20206,
+        "K18": 18185,
+        "K14": 14112,
+        "K10": 10005,
+        "K9": 9002
+      }
+    },
+    {
+      "name": "おたからや",
+      "type": "参考買取相場",
+      "url": "https://www.otakaraya.jp/gold/",
+      "prices": {
+        "K24": 23788,
+        "K22": 21817,
+        "K20": 19864,
+        "K18": 17840,
+        "K14": 13910,
+        "K10": 9908,
+        "K9": 8908
+      }
+    },
+    {
+      "name": "買取大吉",
+      "type": "参考買取相場",
+      "url": "https://www.kaitori-daikichi.jp/list/gold/k24/souba/",
+      "prices": {
+        "K24": 23186,
+        "K22": 21200,
+        "K20": 19320,
+        "K18": 17390,
+        "K14": 13560,
+        "K10": 9670,
+        "K9": 8700
+      }
+    }
+  ]
 }
