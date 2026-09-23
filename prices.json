@@ -1,9 +1,6 @@
 {
-  "tanaka": 13500,
-  "daikichi": 13450,
-  "komehyo": 13400,
-  "nanboya": 13350,
-  "otakaraya": 13200,
-  "goldmrs": 13480,
-  "last_updated": "2024-01-01 10:00:00"
+  "tanaka_buy": 24247,
+  "last_updated_jst": "2026-09-18 17:00（初期データ）",
+  "source_label": "田中貴金属公式",
+  "source_url": "https://gold.tanaka.co.jp/commodity/souba/index.php"
 }
